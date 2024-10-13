@@ -4,8 +4,7 @@ const app = express();
 const connectDb = require("./config/database"); // Database connection
 const User = require("./models/user"); // User model
 
-// Middleware to parse request body
-app.use(express.json());
+
 
 // Connect to the database
 connectDb()
