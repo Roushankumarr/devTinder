@@ -1,26 +1,43 @@
-// creating server
+// Creating server
 const express = require("express");
 const app = express();
+const connectDb = require("./config/database"); // Database connection
+const User = require("./models/user"); // User model
 
-// working with middlewares
-const {adminAuth,userAuth}=require("./middlewares/auth");
+// Middleware to parse request body
+app.use(express.json());
 
-app.use("/admin",adminAuth);
-app.use("/user",userAuth);
+// Connect to the database
+connectDb()
+  .then(() => {
+    console.log("Connected to database");
 
-app.get("/admin/getalladmindata",(req,res)=>{
-   console.log("admin data sent");
-   res.send("admin all data");
-    
-})
-app.post("/admin/sendalladmindata",(req,res)=>{
-    console.log(" sent");
-    res.send("sent data successfully");
-     
- })
- 
+    // Start the server only after successful DB connection
+    app.listen(7000, () => {
+      console.log("Server is running on port 7000");
+    });
+  })
+  .catch((error) => {
+    console.log("Database connection failed:", error);
+  });
 
+// Signup route
+app.post("/signup", async (req, res) => {
+  try {
+    // Create new user instance
+    const user = new User({
+      firstName: "Roushan",
+      lastName: "Kumar",
+      emailId: "roushan123patna@gmail.com",
+      password:"abc@123"
+    });
 
-app.listen(7000,()=>{
-    console.log("server is running")
+    // Save user to the database
+    await user.save();
+
+    res.send("User added successfully");
+  } catch (error) {
+    console.log("Error adding user:", error);
+    res.status(500).send("Error adding user");
+  }
 });
