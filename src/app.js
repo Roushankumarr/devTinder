@@ -1,8 +1,93 @@
-// Creating server
 const express = require("express");
 const app = express();
 const connectDb = require("./config/database"); // Database connection
 const User = require("./models/user"); // User model
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// Signup route
+app.post("/signup", async (req, res) => {
+  console.log(req.body); // Log the request body to verify incoming data
+
+  // Creating an instance of User model
+  const user = new User(req.body);
+
+  try {
+    await user.save(); // Save the user to the database
+    res.status(201).send("User added successfully");
+  } catch (err) {
+    console.error("Error saving the user:", err); // Log the actual error
+    res.status(400).send("Error saving the user: " + err.message);
+  }
+});
+
+//get users by email
+app.get("/user", async (req,res)=>{
+const userEmail = req.body.emailId;
+
+try{
+
+    const users = await User.find({emailId: userEmail});
+    if(users.length===0){
+        res.status(404).send("User Not found")
+    }
+    else{
+
+         res.send(users);
+    }
+   
+
+}
+catch(err){
+    res.status(400).send("something went wrong")
+
+}
+
+
+
+})
+
+// partial update into server
+app.patch("/user",async(req,res)=>{
+  // id is unique way to identify whichever document to be updated
+const userId = req.body.userId;
+const data = req.body;
+try{
+const user =await  User.findByIdAndUpdate({_id:userId},data);
+console.log(user);
+res.send("user updated succesfully");
+
+
+}
+catch(err){
+  res.send(402).send("something went wrong");
+
+
+}
+
+});
+
+// delete into server.
+app.delete("/user",async(req,res)=>{
+const userId = req.body.userId;
+try{
+const user = await User.findByIdAndDelete(userId);
+  res.send("user deleted succesfully");
+
+}
+catch(err){
+  res.send(402).send("something went wrong");
+
+
+
+}
+
+
+});
+
+
+
 
 
 
@@ -19,24 +104,3 @@ connectDb()
   .catch((error) => {
     console.log("Database connection failed:", error);
   });
-
-// Signup route
-app.post("/signup", async (req, res) => {
-  try {
-    // Create new user instance
-    const user = new User({
-      firstName: "Roushan",
-      lastName: "Kumar",
-      emailId: "roushan123patna@gmail.com",
-      password:"abc@123"
-    });
-
-    // Save user to the database
-    await user.save();
-
-    res.send("User added successfully");
-  } catch (error) {
-    console.log("Error adding user:", error);
-    res.status(500).send("Error adding user");
-  }
-});
