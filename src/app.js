@@ -7,6 +7,7 @@ const User = require("./models/user"); // User model
 app.use(express.json());
 
 // Signup route
+
 app.post("/signup", async (req, res) => {
   console.log(req.body); // Log the request body to verify incoming data
 
@@ -23,6 +24,7 @@ app.post("/signup", async (req, res) => {
 });
 
 //get users by email
+
 app.get("/user", async (req,res)=>{
 const userEmail = req.body.emailId;
 
@@ -49,12 +51,34 @@ catch(err){
 })
 
 // partial update into server
+
 app.patch("/user",async(req,res)=>{
   // id is unique way to identify whichever document to be updated
 const userId = req.body.userId;
 const data = req.body;
 try{
-const user =await  User.findByIdAndUpdate({_id:userId},data);
+
+  // mujhe kya badlna hai request karne p
+  const ALLOWED_UPDATES =[   
+   "UserId",
+   "photoUrl",
+   "about",
+   "gender",
+   "age",
+   "skills",
+   ];
+    // kya badalne wala chiz mere data me hai
+   const isUpdatedAllowed = Object.keys(data).every((k)=>
+    ALLOWED_UPDATES.includes(k));
+
+   if(!isUpdatedAllowed){
+
+    res.status(400).send("Updated not allowed");
+   
+  }
+
+
+const user =await  User.findByIdAndUpdate({_id:userId},data,{runValidators:true,});
 console.log(user);
 res.send("user updated succesfully");
 
@@ -69,6 +93,7 @@ catch(err){
 });
 
 // delete into server.
+
 app.delete("/user",async(req,res)=>{
 const userId = req.body.userId;
 try{

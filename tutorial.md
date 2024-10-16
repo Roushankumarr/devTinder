@@ -33,3 +33,7 @@ res.send(Response!! );
 taking about middlewares : as we see that on going on any  route, it starts matching with handlers which gets responsed backed on that request. That is called the middlewares chain between the request and responsed. 
 
 difference between app.use() vs app.all()
+
+
+validation in schemas through mongoose documentation.
+changes in patch api validation.
