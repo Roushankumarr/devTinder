@@ -1,20 +1,47 @@
 const express = require("express");
 const app = express();
-const connectDb = require("./config/database"); // Database connection
+const connectDb = require("./config/database"); // Database connectio
 const User = require("./models/user"); // User model
+const { validateSignupData } = require("./utils/validator");
+const bcrypt = require("bcrypt");
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
+const {userAuth} = require("./middlewares/userAuth");
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+// Use cookie-parser middleware
+app.use(cookieParser());
 
 // Signup route
 
 app.post("/signup", async (req, res) => {
   console.log(req.body); // Log the request body to verify incoming data
 
-  // Creating an instance of User model
-  const user = new User(req.body);
+
 
   try {
+    // validate the data
+    validateSignupData(req);
+
+    //extracting values 
+
+    const { firstName, lastName, emailId, password } = req.body;
+
+    //encrypt password
+
+    const hashPassword = await bcrypt.hash(password, 10);
+    console.log(hashPassword);
+
+    // Creating an instance of User model
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: hashPassword,
+    });
+
     await user.save(); // Save the user to the database
     res.status(201).send("User added successfully");
   } catch (err) {
@@ -23,93 +50,64 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-//get users by email
+// login route
 
-app.get("/user", async (req,res)=>{
-const userEmail = req.body.emailId;
+app.post("/login", async (req, res) => {
+  try {
 
-try{
+    // extracting data from request
+    const { emailId, password } = req.body;
 
-    const users = await User.find({emailId: userEmail});
-    if(users.length===0){
-        res.status(404).send("User Not found")
+    // checking this email id already exist or not in the database
+
+    const user = await User.findOne({ emailId: emailId });
+
+    if (!user) {
+      throw new Error("Users doesnot exists");
     }
-    else{
 
-         res.send(users);
+    // checking the password 
+    const isPassword = await user.validatePassword(password);
+
+    if (isPassword) {
+     // generate tokens
+
+     const token = await user.getJWT();
+     console.log(token);
+    
+     // iss token ko cookie me add kar dun
+     res.cookie("token",token);
+      res.send("login succesfully");
     }
-   
+    else {
+      throw new Error("password is incorrect");
+    }
 
-}
-catch(err){
-    res.status(400).send("something went wrong")
 
-}
+  }
+  catch (err) {
 
+    res.status(400).send("Error saving the user: " + err.message);
+  }
 
 
 })
 
-// partial update into server
+app.get("/profile",userAuth, async (req, res) => {
+  
 
-app.patch("/user",async(req,res)=>{
-  // id is unique way to identify whichever document to be updated
-const userId = req.body.userId;
-const data = req.body;
-try{
+  // jb bhi koi naya request maronge server p tb kya honga, phle to jo token generates usko validate karenga then uske baad kya dikhana hai woh honga
+   try{
+    const user = req.user;
+    res.send(user);
+   }
+   catch(err){
 
-  // mujhe kya badlna hai request karne p
-  const ALLOWED_UPDATES =[   
-   "UserId",
-   "photoUrl",
-   "about",
-   "gender",
-   "age",
-   "skills",
-   ];
-    // kya badalne wala chiz mere data me hai
-   const isUpdatedAllowed = Object.keys(data).every((k)=>
-    ALLOWED_UPDATES.includes(k));
+    res.status(400).send("Error:"+ err.message);
 
-   if(!isUpdatedAllowed){
-
-    res.status(400).send("Updated not allowed");
-   
   }
+})
 
-
-const user =await  User.findByIdAndUpdate({_id:userId},data,{runValidators:true,});
-console.log(user);
-res.send("user updated succesfully");
-
-
-}
-catch(err){
-  res.send(402).send("something went wrong");
-
-
-}
-
-});
-
-// delete into server.
-
-app.delete("/user",async(req,res)=>{
-const userId = req.body.userId;
-try{
-const user = await User.findByIdAndDelete(userId);
-  res.send("user deleted succesfully");
-
-}
-catch(err){
-  res.send(402).send("something went wrong");
-
-
-
-}
-
-
-});
 
 
 

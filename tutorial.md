@@ -37,3 +37,9 @@ difference between app.use() vs app.all()
 
 validation in schemas through mongoose documentation.
 changes in patch api validation.
+
+using bcrypt for converting password to encrypted form and making condition
+for valid password for login into account.
+
+                   now using token and cookies --------Jwt tokens------
+
